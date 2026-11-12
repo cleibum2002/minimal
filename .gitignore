@@ -1,0 +1,5 @@
+.claude/
+.vscode/
+*.apk
+*.mp4
+android/.kotlin/
