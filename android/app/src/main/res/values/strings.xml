@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="focus_service_description">Lets Minimal show the apps you choose in grayscale. It only checks which app is open, never what is on your screen.</string>
+</resources>

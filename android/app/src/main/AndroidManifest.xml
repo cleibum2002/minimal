@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- screen time: granted by you in Settings → Usage access -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <!-- monochrome: granted once over ADB, see the monochrome setup screen -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- tapping the clock: some Clock apps (Xiaomi's included) refuse to open without it -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- "uninstall" in the long-press menu -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <!-- Android 11+ hides other apps unless we declare that we list launchable apps -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".MinimalApp"
+        android:label="Minimal"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Launcher">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="true"
+            android:clearTaskOnLaunch="true"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustNothing">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!-- also listed as a normal app so it can be opened before it's the default -->
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".FocusService"
+            android:exported="true"
+            android:label="Minimal"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/focus_service" />
+        </service>
+    </application>
+</manifest>

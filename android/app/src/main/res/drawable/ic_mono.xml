@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- phone with three bars fading from color to gray, after Minimalist Phone's monochrome screen -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="60dp"
+    android:height="96dp"
+    android:viewportWidth="60"
+    android:viewportHeight="96">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="4" android:fillColor="#00000000"
+        android:pathData="M12,3H48A9,9 0,0 1,57 12V84A9,9 0,0 1,48 93H12A9,9 0,0 1,3 84V12A9,9 0,0 1,12 3Z" />
+    <path android:fillColor="#FFD6D6D6" android:pathData="M12,12h10v72h-10z" />
+    <path android:fillColor="#FFF29B9B" android:pathData="M12,12h10v30h-10z" />
+    <path android:fillColor="#FF9E9E9E" android:pathData="M25,12h10v72h-10z" />
+    <path android:fillColor="#FF7A9A5C" android:pathData="M25,12h10v24h-10z" />
+    <path android:fillColor="#FF6B6B6B" android:pathData="M38,12h10v72h-10z" />
+    <path android:fillColor="#FF4E6A8C" android:pathData="M38,12h10v20h-10z" />
+</vector>
