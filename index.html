@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimal Launcher Mockup</title>
+<style>
+  :root { --page:#ebe9e4; --ink:#1b1b1b; --muted:#666; --card:#fff; --line:#d8d5ce; --accent:#2f6f4f; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page:#121212; --ink:#ececec; --muted:#9a9a9a; --card:#1b1b1b; --line:#2d2d2d; --accent:#7fc29b; }
+  }
+  :root[data-theme="dark"] { --page:#121212; --ink:#ececec; --muted:#9a9a9a; --card:#1b1b1b; --line:#2d2d2d; --accent:#7fc29b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--page); color:var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { display:flex; gap:48px; justify-content:center; align-items:flex-start; padding:32px 16px; flex-wrap:wrap; }
+
+  /* ---------- phone ---------- */
+  .phone { width:min(360px, 100%); aspect-ratio: 9 / 20; border-radius:44px; background:#0a0a0a; padding:10px; flex:none;
+           box-shadow: 0 30px 60px -20px rgba(0,0,0,.45), inset 0 0 0 2px #2a2a2a; }
+  .screen { position:relative; width:100%; height:100%; border-radius:34px; overflow:hidden; background:var(--bg); color:var(--fg);
+            user-select:none; -webkit-user-select:none; touch-action:none; transition: background .25s, color .25s; }
+  .screen.dark  { --bg:#000; --fg:#f0f0f0; --dim:#7d7d7d; --rule:#1f1f1f; }
+  .screen.light { --bg:#f2f1ec; --fg:#141414; --dim:#7a7a7a; --rule:#dedbd3; }
+  .screen.size-s { --fs:18px; } .screen.size-m { --fs:22px; } .screen.size-l { --fs:27px; }
+  .screen.align-center .aligned { text-align:center; } .screen.align-right .aligned { text-align:right; }
+
+  .status { position:absolute; top:0; left:0; right:0; height:30px; display:flex; justify-content:center; align-items:center; z-index:5; }
+  .status::before { content:""; width:10px; height:10px; border-radius:50%; background:#111; box-shadow: 0 0 0 2px #1d1d1d; } /* camera hole */
+  .nav { position:absolute; bottom:0; left:0; right:0; height:44px; display:flex; justify-content:space-around; align-items:center; z-index:6; }
+  .nav button { width:56px; height:36px; display:grid; place-items:center; color:var(--dim); border-radius:18px; }
+  .nav button:hover { color:var(--fg); }
+  .nav button:active { background:var(--rule); }
+  .nav svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linejoin:round; }
+
+  .view { position:absolute; inset:0; padding:56px 28px 52px; display:flex; flex-direction:column; opacity:0; pointer-events:none;
+          transform:translateY(12px); transition: opacity .2s, transform .2s; }
+  .view.active { opacity:1; pointer-events:auto; transform:none; }
+  /* app list slides in from the right, home slides away to the left */
+  .view.home, .view.drawer { transition: opacity .28s, transform .28s cubic-bezier(.2,.8,.2,1); }
+  .view.home:not(.active) { transform:translateX(-30%); }
+  .view.drawer { transform:translateX(100%); }
+  .view.drawer.active { transform:none; }
+  button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+  ul { list-style:none; margin:0; padding:0; }
+
+  /* home */
+  .clock { font-size:calc(var(--fs) * 3); font-weight:200; letter-spacing:-.02em; line-height:1; }
+  .date, .battery { color:var(--dim); font-size:calc(var(--fs) * .7); margin-top:8px; }
+  .favs { margin-top:auto; margin-bottom:auto; }
+  .app { display:block; width:100%; text-align:inherit; font-size:var(--fs); font-weight:400; padding:9px 0; }
+  .app:hover { opacity:.6; }
+  .corners { display:flex; justify-content:space-between; color:var(--dim); font-size:calc(var(--fs) * .65); }
+  .corners button:hover { color:var(--fg); }
+  .hint { text-align:center; color:var(--dim); font-size:11px; letter-spacing:.08em; text-transform:lowercase; margin-top:14px; cursor:pointer; }
+
+  /* drawer */
+  .search { width:100%; font:inherit; font-size:calc(var(--fs) * .8); background:transparent; color:var(--fg); border:0;
+            border-bottom:1px solid var(--rule); padding:8px 0; outline:none; }
+  .search::placeholder { color:var(--dim); }
+  .list { overflow-y:auto; margin-top:12px; flex:1; touch-action:pan-y; scrollbar-width:none; }
+  .list::-webkit-scrollbar { display:none; }
+  .list .app { font-size:calc(var(--fs) * .85); padding:8px 0; }
+  .searchrow { display:flex; align-items:center; gap:10px; }
+  .gear { color:var(--dim); padding:6px; display:grid; place-items:center; }
+  .gear:hover { color:var(--fg); }
+  .gear svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .tag { color:var(--dim); font-size:.6em; margin-left:6px; }
+  .empty { color:var(--dim); padding-top:12px; }
+
+  /* settings */
+  .settings h2 { font-weight:300; font-size:calc(var(--fs) * 1.2); margin:0 0 14px; }
+  .settings .scroll { overflow-y:auto; flex:1; touch-action:pan-y; scrollbar-width:none; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--rule); font-size:14px; }
+  .seg { display:flex; gap:2px; }
+  .seg button { padding:4px 8px; border-radius:6px; color:var(--dim); font-size:13px; }
+  .seg button.on { color:var(--bg); background:var(--fg); }
+  .sub { color:var(--dim); font-size:12px; padding:10px 0 4px; text-transform:uppercase; letter-spacing:.08em; }
+  .chip { display:inline-block; font-size:13px; padding:4px 10px; margin:4px 4px 0 0; border:1px solid var(--rule); border-radius:999px; }
+  .none { color:var(--dim); font-size:13px; }
+  .link { color:var(--dim); font-size:13px; text-decoration:underline; padding:14px 0 0; }
+
+  /* pause + fake app */
+  .center { justify-content:center; align-items:center; text-align:center; gap:14px; }
+  .big { font-size:calc(var(--fs) * 1.4); font-weight:300; }
+  .count { font-size:calc(var(--fs) * 3.4); font-weight:200; }
+  .muted { color:var(--dim); font-size:14px; max-width:240px; }
+  .btn { border:1px solid var(--rule); border-radius:999px; padding:10px 22px; font-size:15px; }
+  .btn:disabled { opacity:.3; cursor:default; }
+
+  .appview { gap:14px; }
+  .appview.mono { filter:grayscale(1); }
+  .appbar { display:flex; justify-content:space-between; align-items:center; font-size:var(--fs); }
+  .appbar small { color:var(--dim); font-size:11px; border:1px solid var(--rule); border-radius:999px; padding:2px 8px; }
+  .feed { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .feed div { aspect-ratio:1; border-radius:12px; }
+
+  /* monochrome intro, modeled on Minimalist Phone's */
+  .monointro { padding:40px 0 52px; align-items:center; text-align:center; }
+  .monointro header { width:100%; display:grid; grid-template-columns:48px 1fr 48px; align-items:center; padding:0 8px 14px;
+                      border-bottom:1px solid var(--fg); font-size:16px; }
+  .monointro header button { font-size:20px; }
+  .monointro svg { margin:28px 0 36px; color:var(--fg); }
+  .monointro p { font-size:14px; line-height:1.6; margin:0 24px 14px; }
+  .monointro .next { margin:auto 0 8px; width:calc(100% - 40px); padding:13px; border-radius:999px; background:var(--fg); color:var(--bg); font-size:15px; }
+
+  /* long-press sheet */
+  .sheet { position:absolute; left:10px; right:10px; bottom:48px; background:var(--bg); border:1px solid var(--rule);
+           border-radius:22px; padding:16px 20px; z-index:8; box-shadow:0 -10px 40px rgba(0,0,0,.35); }
+  .sheet[hidden] { display:none; }
+  .sheet .title { color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+  .sheet button { display:block; width:100%; text-align:left; padding:10px 0; font-size:16px; }
+  .sheet button[hidden] { display:none; }
+
+  /* ---------- side panel ---------- */
+  .panel { max-width:520px; flex:1 1 320px; min-width:0; }
+  .panel h1 { font-size:28px; font-weight:600; margin:0 0 6px; letter-spacing:-.01em; }
+  .panel .lede { color:var(--muted); margin:0 0 24px; line-height:1.5; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:16px; }
+  .card h3 { margin:0 0 10px; font-size:15px; display:flex; gap:10px; align-items:baseline; }
+  .card h3 small { color:var(--muted); font-weight:400; font-size:12px; }
+  .card ul { padding-left:18px; list-style:disc; line-height:1.65; font-size:14px; }
+  .card p { margin:0; font-size:14px; line-height:1.6; }
+  .badge { font-size:11px; font-weight:600; color:var(--accent); border:1px solid currentColor; border-radius:999px; padding:1px 8px; }
+  kbd { font: 12px ui-monospace, Consolas, monospace; border:1px solid var(--line); border-radius:4px; padding:0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="phone">
+    <div class="screen dark size-m align-left" id="screen">
+      <div class="status"></div>
+
+      <!-- HOME -->
+      <section class="view home aligned active" data-view="home">
+        <div class="clock" id="clock">9:41</div>
+        <div class="date" id="date"></div>
+        <div class="battery" id="battery"></div>
+        <ul class="favs" id="favs"></ul>
+        <div class="corners"><button data-app="Phone">phone</button><button data-app="Camera">camera</button></div>
+        <div class="hint" data-go="drawer">swipe left for all apps</div>
+      </section>
+
+      <!-- APP DRAWER -->
+      <section class="view drawer aligned" data-view="drawer">
+        <div class="searchrow">
+          <input class="search" id="search" placeholder="search apps" autocomplete="off">
+          <button class="gear" data-go="settings" aria-label="Launcher settings">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+        <ul class="list" id="list"></ul>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view settings" data-view="settings">
+        <h2>launcher settings</h2>
+        <div class="scroll" id="settings"></div>
+      </section>
+
+      <!-- MINDFUL PAUSE -->
+      <section class="view center" data-view="pause">
+        <div class="big">take a breath.</div>
+        <div class="count" id="count">5</div>
+        <div class="muted">You marked <b id="pauseName"></b> as distracting. Do you really need it right now?</div>
+        <button class="btn" data-go="home">never mind</button>
+        <button class="btn" id="openAnyway" disabled>open anyway</button>
+      </section>
+
+      <!-- FAKE OPENED APP -->
+      <section class="view appview" data-view="app" id="appView">
+        <div class="appbar"><span id="appName"></span><small id="monoTag">monochrome</small></div>
+        <div class="feed" id="feed"></div>
+        <div class="muted">A colorful stand-in for the real app. On your phone the launcher just hands off to it.</div>
+      </section>
+
+      <!-- MONOCHROME INTRO -->
+      <section class="view monointro" data-view="mono">
+        <header><button data-go="settings" aria-label="Back">←</button><span>monochrome mode</span><span></span></header>
+        <svg viewBox="0 0 60 96" width="60" height="96" aria-hidden="true">
+          <rect x="3" y="3" width="54" height="90" rx="9" fill="none" stroke="currentColor" stroke-width="4"/>
+          <rect x="12" y="12" width="10" height="72" rx="2" fill="#d6d6d6"/><rect x="12" y="12" width="10" height="30" rx="2" fill="#f29b9b"/>
+          <rect x="25" y="12" width="10" height="72" rx="2" fill="#9e9e9e"/><rect x="25" y="12" width="10" height="24" rx="2" fill="#7a9a5c"/>
+          <rect x="38" y="12" width="10" height="72" rx="2" fill="#6b6b6b"/><rect x="38" y="12" width="10" height="20" rx="2" fill="#4e6a8c"/>
+        </svg>
+        <p>Color influences how you interact with your apps and can extend the time you spend on your phone.</p>
+        <p>This is especially true for highly engaging apps like social media. Viewing them in monochrome can help you cut your screen time.</p>
+        <p>Once it's on, you can turn monochrome on or off for each app.</p>
+        <button class="next" id="monoNext">Next</button>
+      </section>
+
+      <div class="sheet" id="sheet" hidden>
+        <div class="title" id="sheetTitle"></div>
+        <button data-act="fav"></button>
+        <button data-act="rename">rename</button>
+        <button data-act="distract"></button>
+        <button data-act="mono"></button>
+        <button data-act="hide">hide from app list</button>
+        <button data-act="close" style="color:var(--dim)">cancel</button>
+      </div>
+
+      <nav class="nav">
+        <button data-nav="recents" aria-label="Recent apps"><svg viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/></svg></button>
+        <button data-go="home" aria-label="Home"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/></svg></button>
+        <button data-nav="back" aria-label="Back"><svg viewBox="0 0 16 16"><path d="M12 2.5v11L3 8z"/></svg></button>
+      </nav>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <h1>My minimal launcher</h1>
+    <p class="lede">A clickable mockup of the home screen we'll build for the Redmi 14C. Your changes in its settings are remembered in this browser.</p>
+
+    <div class="card">
+      <h3>Try it</h3>
+      <ul>
+        <li><b>Swipe left</b> (or click "swipe left for all apps") to open the app list. Swipe right to go back. Type to search, <kbd>Enter</kbd> opens the top result.</li>
+        <li><b>Long-press</b> (or right-click) any app: favorite, rename, hide, or mark it distracting.</li>
+        <li><b>Launcher settings</b>: the gear icon next to search in the app list, or long-press empty space on the home screen.</li>
+        <li>Open <b>Facebook, Instagram, TikTok or YouTube</b> to see the mindful pause.</li>
+        <li>Turn on <b>Monochrome</b> in settings, then open Instagram or TikTok: it shows up in grayscale. Long-press any app to change it.</li>
+        <li>Bottom buttons:<b>recent apps</b> (reopens your last app), <b>home</b> (or <kbd>Esc</kbd>), and <b>back</b>.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="badge">v1</span> The core launcher <small>build first, in the mockup</small></h3>
+      <ul>
+        <li>Text-only home screen: clock, date, battery, favorite apps</li>
+        <li>Full app list with instant search</li>
+        <li>Long-press menu: favorite, rename, hide</li>
+        <li>Settings: dark/light, text size, alignment, 12/24h clock</li>
+        <li>Registers as an Android home app so you can set it as default</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="badge">v2</span> Focus features <small>in the mockup</small></h3>
+      <ul>
+        <li>Mindful pause countdown before distracting apps</li>
+        <li>Monochrome mode per app (on the real phone: a one-time, free setup step from your PC)</li>
+        <li>Phone and camera shortcuts in the corners</li>
+        <li>Gestures: swipe down for notifications, double-tap to lock</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="badge">v3</span> Later, harder <small>not mocked yet</small></h3>
+      <ul>
+        <li>Screen time per app, plus daily limits</li>
+        <li>Notification filter: hold back notifications from noisy apps</li>
+        <li>Plain-text widgets: next calendar event, weather</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>How we'll build it, for free</h3>
+      <p>Kotlin + Jetpack Compose in Android Studio (free). Install it straight onto your phone over USB. You don't need the Play Store or to pay anything.</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+const APPS = ['Phone','Messages','Camera','Gallery','Chrome','Gmail','Maps','Spotify','YouTube','Facebook','Messenger','Instagram',
+  'TikTok','GCash','Maya','Shopee','Lazada','Grab','Calculator','Calendar','Clock','Settings','Files','Notes','Google Classroom',
+  'Canva','Discord','Teams','Viber','Weather'];
+const DEFAULT = { theme:'dark', size:'m', align:'left', h24:false, showDate:true, showBattery:true, pause:5,
+  favs:['Messages','Chrome','Spotify','GCash','Calendar','Notes'], hidden:[], distract:['Facebook','Instagram','TikTok','YouTube'], names:{},
+  mono:false, monoApps:['Facebook','Instagram','TikTok','YouTube'] };
+const OPTS = [
+  ['theme','Theme',[['dark','Dark'],['light','Light']]],
+  ['size','Text size',[['s','S'],['m','M'],['l','L']]],
+  ['align','Alignment',[['left','Left'],['center','Center'],['right','Right']]],
+  ['h24','Clock',[[false,'12h'],[true,'24h']]],
+  ['showDate','Date',[[true,'Show'],[false,'Hide']]],
+  ['showBattery','Battery',[[true,'Show'],[false,'Hide']]],
+  ['pause','Mindful pause',[[0,'Off'],[5,'5s'],[10,'10s']]],
+  ['mono','Monochrome',[[false,'Off'],[true,'On']]],
+];
+
+const $ = id => document.getElementById(id);
+const screen = $('screen'), sheet = $('sheet'), search = $('search');
+let s = load(), view = 'home', prev = 'home', lastApp = null, battery = 82, timer = null, menuApp = null;
+
+function load() {
+  try { return { ...structuredClone(DEFAULT), ...JSON.parse(localStorage.getItem('minimal-launcher') || '{}') }; }
+  catch { return structuredClone(DEFAULT); }
+}
+function save() { try { localStorage.setItem('minimal-launcher', JSON.stringify(s)); } catch {} render(); }
+
+const esc = t => t.replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const label = a => s.names[a] || a;
+const toggle = (arr, a) => arr.includes(a) ? arr.filter(x => x !== a) : [...arr, a];
+const appBtn = a => `<li><button class="app" data-app="${esc(a)}">${esc(label(a))}${s.distract.includes(a) && view === 'drawer' ? '<span class="tag">•</span>' : ''}</button></li>`;
+
+function render() {
+  screen.className = `screen ${s.theme} size-${s.size} align-${s.align}`;
+  $('favs').innerHTML = s.favs.map(appBtn).join('');
+  $('date').hidden = !s.showDate;
+  $('battery').hidden = !s.showBattery;
+  $('battery').textContent = battery + '%';
+  tick(); renderList(); renderSettings();
+}
+
+function renderList() {
+  const q = search.value.trim().toLowerCase();
+  const apps = APPS.filter(a => !s.hidden.includes(a) && label(a).toLowerCase().includes(q))
+                   .sort((a, b) => label(a).localeCompare(label(b)));
+  $('list').innerHTML = apps.length ? apps.map(appBtn).join('') : '<li class="empty">no apps found</li>';
+}
+
+function renderSettings() {
+  const chips = (arr, key, empty) => arr.length
+    ? arr.map(a => `<button class="chip" data-un="${key}" data-app-name="${esc(a)}">${esc(label(a))} ✕</button>`).join('')
+    : `<span class="none">${empty}</span>`;
+  $('settings').innerHTML = OPTS.map(([k, name, vals]) =>
+    `<div class="row"><span>${name}</span><span class="seg">${vals.map(([v, t], i) =>
+      `<button class="${s[k] === v ? 'on' : ''}" data-k="${k}" data-i="${i}">${t}</button>`).join('')}</span></div>`).join('')
+    + `<div class="sub">distracting apps</div>${chips(s.distract, 'distract', 'none, long-press an app to add')}`
+    + (s.mono ? `<div class="sub">monochrome apps</div>${chips(s.monoApps, 'monoApps', 'none, long-press an app to add')}` : '')
+    + `<div class="sub">hidden apps</div>${chips(s.hidden, 'hidden', 'none')}`
+    + `<br><button class="link" id="reset">reset everything</button>`;
+}
+
+function tick() {
+  const d = new Date();
+  $('clock').textContent = d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit', hour12:!s.h24 }).replace(/\s?[AP]M/i, '');
+  $('date').textContent = d.toLocaleDateString([], { weekday:'long', day:'numeric', month:'long' });
+}
+
+function show(v) {
+  clearInterval(timer); sheet.hidden = true;
+  if (view === 'home' || view === 'drawer') prev = view; // where "back" returns from an app or pause
+  view = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.dataset.view === v));
+  if (v === 'drawer') { search.value = ''; renderList(); search.focus({ preventScroll:true }); }
+  else search.blur();
+}
+
+function launch(a) {
+  if (s.distract.includes(a) && s.pause > 0) return pauseFor(a);
+  openApp(a);
+}
+
+function openApp(a) {
+  lastApp = a; $('appName').textContent = label(a);
+  const hue = [...a].reduce((n, c) => n + c.charCodeAt(0), 0) * 37 % 360; // stable color per app
+  $('feed').innerHTML = [0, 1, 2, 3].map(i =>
+    `<div style="background:linear-gradient(135deg,hsl(${hue + i * 35} 85% 60%),hsl(${hue + i * 35 + 70} 85% 48%))"></div>`).join('');
+  const mono = s.mono && s.monoApps.includes(a);
+  $('appView').classList.toggle('mono', mono); $('monoTag').hidden = !mono;
+  show('app');
+}
+
+function back() {
+  if (!sheet.hidden) sheet.hidden = true;
+  else show(['app', 'pause', 'settings'].includes(view) ? prev : view === 'mono' ? 'settings' : 'home');
+}
+
+function pauseFor(a) {
+  show('pause');
+  let n = s.pause;
+  $('pauseName').textContent = label(a); $('count').textContent = n;
+  const open = $('openAnyway'); open.disabled = true;
+  open.onclick = () => openApp(a);
+  timer = setInterval(() => {
+    $('count').textContent = --n;
+    if (n <= 0) { clearInterval(timer); open.disabled = false; }
+  }, 1000);
+}
+
+function openMenu(a) {
+  menuApp = a;
+  $('sheetTitle').textContent = label(a);
+  sheet.querySelector('[data-act=fav]').textContent = s.favs.includes(a) ? 'remove from home' : 'add to home';
+  sheet.querySelector('[data-act=distract]').textContent = s.distract.includes(a) ? 'unmark as distracting' : 'mark as distracting';
+  const mono = sheet.querySelector('[data-act=mono]');
+  mono.hidden = !s.mono;
+  mono.textContent = s.monoApps.includes(a) ? 'show in color' : 'show in monochrome';
+  sheet.hidden = false;
+}
+
+sheet.addEventListener('click', e => {
+  const act = e.target.dataset.act, a = menuApp;
+  if (!act) return;
+  if (act === 'fav') s.favs = toggle(s.favs, a);
+  if (act === 'distract') s.distract = toggle(s.distract, a);
+  if (act === 'mono') s.monoApps = toggle(s.monoApps, a);
+  if (act === 'hide') { s.hidden = toggle(s.hidden, a); s.favs = s.favs.filter(x => x !== a); }
+  if (act === 'rename') {
+    const n = prompt('Rename ' + label(a), label(a));
+    if (n && n.trim()) s.names[a] = n.trim().slice(0, 30); else if (n === '') delete s.names[a];
+  }
+  sheet.hidden = true;
+  if (act !== 'close') save();
+});
+
+// gestures: swipe left/right + long-press, with mouse or touch
+let start = null, lp = null, suppressClick = false;
+screen.addEventListener('pointerdown', e => {
+  if (!sheet.hidden && sheet.contains(e.target)) return;
+  start = { x:e.clientX, y:e.clientY }; suppressClick = false;
+  const item = e.target.closest('[data-app]');
+  lp = setTimeout(() => {
+    if (item && (view === 'home' || view === 'drawer')) { suppressClick = true; openMenu(item.dataset.app); }
+    else if (view === 'home' && !e.target.closest('button')) { suppressClick = true; show('settings'); }
+  }, 550);
+});
+screen.addEventListener('pointermove', e => {
+  if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) clearTimeout(lp);
+});
+screen.addEventListener('pointerup', e => {
+  clearTimeout(lp);
+  if (!start) return;
+  const dx = e.clientX - start.x, dy = e.clientY - start.y; start = null;
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return; // mostly-vertical drags are scrolls
+  suppressClick = true;
+  if (dx < 0 && view === 'home') show('drawer');
+  else if (dx > 0 && view === 'drawer') show('home');
+});
+screen.addEventListener('pointercancel', () => { clearTimeout(lp); start = null; });
+screen.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const item = e.target.closest('[data-app]');
+  if (item) openMenu(item.dataset.app); else if (view === 'home') show('settings');
+});
+
+screen.addEventListener('click', e => {
+  if (suppressClick) { suppressClick = false; return; }
+  const t = e.target;
+  if (!sheet.hidden && !sheet.contains(t)) { sheet.hidden = true; return; }
+  const go = t.closest('[data-go]'); if (go) return show(go.dataset.go);
+  const nav = t.closest('[data-nav]');
+  if (nav) return nav.dataset.nav === 'back' ? back() : lastApp && openApp(lastApp);
+  const app = t.closest('[data-app]'); if (app && !sheet.contains(app)) return launch(app.dataset.app);
+  if (t.dataset.k) {
+    const v = OPTS.find(o => o[0] === t.dataset.k)[2][+t.dataset.i][0];
+    if (t.dataset.k === 'mono' && v && !s.mono) return show('mono'); // explain it first, like Minimalist Phone does
+    s[t.dataset.k] = v; return save();
+  }
+  if (t.id === 'monoNext') { s.mono = true; save(); return show('settings'); }
+  if (t.dataset.un) { s[t.dataset.un] = s[t.dataset.un].filter(x => x !== t.dataset.appName); return save(); }
+  if (t.id === 'reset' && confirm('Reset all launcher settings?')) { s = structuredClone(DEFAULT); save(); }
+});
+
+search.addEventListener('input', renderList);
+search.addEventListener('keydown', e => {
+  const first = $('list').querySelector('[data-app]');
+  if (e.key === 'Enter' && first) launch(first.dataset.app);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') show('home'); });
+
+navigator.getBattery?.().then(b => { battery = Math.round(b.level * 100); render(); }).catch(() => {});
+setInterval(tick, 10000);
+render();
+</script>
+</body>
+</html>
